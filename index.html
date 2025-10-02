@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGT - Sistema de Gestión Tecnológica</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 SGT - Sistema de Gestión Tecnológica</h1>
+            <p>IPS - Gestión de Equipos Médicos y Recursos</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-panel="ubicaciones">📍 Ubicaciones</button>
+            <button class="nav-tab" data-panel="responsables">👥 Responsables</button>
+            <button class="nav-tab" data-panel="equipos">🔬 Equipos Médicos</button>
+        </div>
+
+        <div class="content">
+            <!-- Tab Ubicaciones -->
+            <div id="ubicaciones" class="tab-content active">
+                <div class="module-header">
+                    <h2 class="module-title">Gestión de Ubicaciones</h2>
+                    <button class="btn btn-primary" onclick="abrirModal('ubicacion')">
+                        ➕ Nueva Ubicación
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Ubicación</th>
+                                <th>Teléfono</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaUbicaciones"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Responsables -->
+            <div id="responsables" class="tab-content">
+                <div class="module-header">
+                    <h2 class="module-title">Gestión de Responsables</h2>
+                    <button class="btn btn-primary" onclick="abrirModal('responsable')">
+                        ➕ Nuevo Responsable
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Documento</th>
+                                <th>Nombre Completo</th>
+                                <th>Cargo</th>
+                                <th>Teléfono</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaResponsables"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Equipos Médicos -->
+            <div id="equipos" class="tab-content">
+                <div class="module-header">
+                    <h2 class="module-title">Gestión de Equipos Médicos</h2>
+                    <button class="btn btn-primary" onclick="abrirModal('equipo')">
+                        ➕ Nuevo Equipo
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Número Activo</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>Ubicación</th>
+                                <th>Responsable</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEquipos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ubicación -->
+    <div id="modalUbicacion" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📍 Agregar/Editar Ubicación</h2>
+            </div>
+            <form id="formUbicaciones">
+                <div class="form-group">
+                    <label>Código Asignado:</label>
+                    <input type="text" id="ubicacion_codigo" class="form-control" placeholder="Ej: UB-001" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombre de la Ubicación:</label>
+                    <input type="text" id="ubicacion_nombre" class="form-control" placeholder="Ej: Pediatría" required>
+                </div>
+                <div class="form-group">
+                    <label>Ubicación Física:</label>
+                    <input type="text" id="ubicacion_fisica" class="form-control" placeholder="Ej: Piso 3 ala norte" required>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono:</label>
+                    <input type="tel" id="ubicacion_telefono" class="form-control" placeholder="Ej: 604-1234567">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" onclick="cerrarModal('ubicacion')">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Responsable -->
+    <div id="modalResponsable" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👥 Agregar/Editar Responsable</h2>
+            </div>
+            <form id="formResponsables">
+                <div class="form-group">
+                    <label>Código Asignado:</label>
+                    <input type="text" id="responsable_codigo" class="form-control" placeholder="Ej: RES-456" required>
+                </div>
+                <div class="form-group">
+                    <label>Documento de Identidad:</label>
+                    <input type="text" id="responsable_documento" class="form-control" placeholder="Ej: 1234567890" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombres y Apellidos:</label>
+                    <input type="text" id="responsable_nombre" class="form-control" placeholder="Ej: Juan Pérez García" required>
+                </div>
+                <div class="form-group">
+                    <label>Cargo:</label>
+                    <select id="responsable_cargo" class="form-control" required>
+                        <option value="">Seleccione un cargo</option>
+                        <option value="Especialista">Especialista</option>
+                        <option value="Auxiliar">Auxiliar</option>
+                        <option value="Secretaria">Secretaria</option>
+                        <option value="Enfermera Jefe">Enfermera Jefe</option>
+                        <option value="Técnico Biomédico">Técnico Biomédico</option>
+                        <option value="Coordinadora">Coordinadora</option>
+                        <option value="Técnico">Técnico</option>
+                        <option value="Administradora">Administradora</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono:</label>
+                    <input type="tel" id="responsable_telefono" class="form-control" placeholder="Ej: 300-1234567">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" onclick="cerrarModal('responsable')">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Equipo Médico -->
+    <div id="modalEquipo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔬 Agregar/Editar Equipo Médico</h2>
+            </div>
+            <form id="formEquipos">
+                <div class="form-group">
+                    <label>Número de Activo:</label>
+                    <input type="text" id="equipo_activo" class="form-control" placeholder="Ej: ACT-2024001" required>
+                </div>
+                <div class="form-group">
+                    <label>Marca:</label>
+                    <input type="text" id="equipo_marca" class="form-control" placeholder="Ej: Philips" required>
+                </div>
+                <div class="form-group">
+                    <label>Modelo:</label>
+                    <input type="text" id="equipo_modelo" class="form-control" placeholder="Ej: IntelliVue MX450" required>
+                </div>
+                <div class="form-group">
+                    <label>Ubicación:</label>
+                    <select id="equipo_ubicacion" class="form-control" required>
+                        <option value="">Seleccione una ubicación</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Responsable:</label>
+                    <select id="equipo_responsable" class="form-control" required>
+                        <option value="">Seleccione un responsable</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" onclick="cerrarModal('equipo')">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
