@@ -245,4 +245,4 @@ Sistema desarrollado para la IPS como parte del curso de Ingeniería de Software
 ---
 **Versión:** 1.0.0  
 **Fecha de entrega:** 5 de Octubre de 2025  
-**Equipo de desarrollo:** [Agregar nombres del equipo]
+**Equipo de desarrollo:** Juanjo, Juliana y Juan
