@@ -166,6 +166,11 @@ async function guardarUbicacion() {
             body: JSON.stringify(ubicacion)
         });
 
+        // Verifica el código de estado HTTP
+        if (!response.ok) {
+            throw new Error('Error de red o servidor');
+        }
+
         const result = await response.json();
         
         if (result.success) {
