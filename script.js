@@ -8,13 +8,26 @@ let equipos = [];
 let editandoUbicacion = null;
 let editandoResponsable = null;
 let editandoEquipo = null;
+// Variables para paginación
+let paginaActualUbicaciones = 1;
+let paginaActualResponsables = 1;
+let paginaActualEquipos = 1;
+const itemsPorPagina = 10;
+
+// Variables para búsqueda
+let ubicacionesFiltradas = [];
+let responsablesFiltrados = [];
+let equiposFiltrados = [];
 
 // ===== INICIALIZACIÓN =====
 document.addEventListener('DOMContentLoaded', function() {
     configurarNavegacion();
     configurarFormularios();
     configurarModales();
-    cargarDatos();
+    cargarDatos().then(() => {
+        configurarBusqueda();
+        configurarPaginacion();
+    });
 });
 
 // ===== NAVEGACIÓN ENTRE PESTAÑAS =====
@@ -58,20 +71,33 @@ function configurarFormularios() {
     // Formulario de ubicaciones
     document.getElementById('formUbicaciones').addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopPropagation(); // Agregar esta línea
         await guardarUbicacion();
+        return false; // Agregar esta línea
     });
 
     // Formulario de responsables
     document.getElementById('formResponsables').addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopPropagation(); // Agregar esta línea
         await guardarResponsable();
+        return false; // Agregar esta línea
     });
 
     // Formulario de equipos
     document.getElementById('formEquipos').addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopPropagation(); // Agregar esta línea
         await guardarEquipo();
+        return false; // Agregar esta línea
     });
+}
+
+
+async function guardarFormulario(tipo) {
+    if (tipo === 'ubicacion') await guardarUbicacion();
+    if (tipo === 'responsable') await guardarResponsable();
+    if (tipo === 'equipo') await guardarEquipo();
 }
 
 // ===== CONFIGURACIÓN DE MODALES =====
@@ -84,6 +110,101 @@ function configurarModales() {
                 cerrarModal(tipo);
             }
         });
+    });
+}
+// ===== CONFIGURACIÓN DE BÚSQUEDA =====
+function configurarBusqueda() {
+    // Búsqueda de ubicaciones
+    document.getElementById('buscarUbicacion').addEventListener('input', function(e) {
+        const busqueda = e.target.value.toLowerCase();
+        ubicacionesFiltradas = ubicaciones.filter(u => 
+            u.codigo_asignado.toLowerCase().includes(busqueda) ||
+            u.nombre_ubicacion.toLowerCase().includes(busqueda) ||
+            u.ubicacion.toLowerCase().includes(busqueda) ||
+            (u.telefono && u.telefono.toLowerCase().includes(busqueda))
+        );
+        paginaActualUbicaciones = 1;
+        mostrarUbicaciones();
+    });
+
+    // Búsqueda de responsables
+    document.getElementById('buscarResponsable').addEventListener('input', function(e) {
+        const busqueda = e.target.value.toLowerCase();
+        responsablesFiltrados = responsables.filter(r => 
+            r.codigo_asignado.toLowerCase().includes(busqueda) ||
+            r.documento_identidad.toLowerCase().includes(busqueda) ||
+            r.nombres_apellidos.toLowerCase().includes(busqueda) ||
+            r.cargo.toLowerCase().includes(busqueda) ||
+            (r.telefono && r.telefono.toLowerCase().includes(busqueda))
+        );
+        paginaActualResponsables = 1;
+        mostrarResponsables();
+    });
+
+    // Búsqueda de equipos
+    document.getElementById('buscarEquipo').addEventListener('input', function(e) {
+        const busqueda = e.target.value.toLowerCase();
+        equiposFiltrados = equipos.filter(e => 
+            e.numero_activo.toLowerCase().includes(busqueda) ||
+            e.marca.toLowerCase().includes(busqueda) ||
+            e.modelo.toLowerCase().includes(busqueda) ||
+            (e.nombre_ubicacion && e.nombre_ubicacion.toLowerCase().includes(busqueda)) ||
+            (e.nombres_apellidos && e.nombres_apellidos.toLowerCase().includes(busqueda))
+        );
+        paginaActualEquipos = 1;
+        mostrarEquipos();
+    });
+}
+
+// ===== CONFIGURACIÓN DE PAGINACIÓN =====
+function configurarPaginacion() {
+    // Paginación ubicaciones
+    document.getElementById('prevUbicaciones').addEventListener('click', () => {
+        if (paginaActualUbicaciones > 1) {
+            paginaActualUbicaciones--;
+            mostrarUbicaciones();
+        }
+    });
+
+    document.getElementById('nextUbicaciones').addEventListener('click', () => {
+        const datos = ubicacionesFiltradas.length > 0 ? ubicacionesFiltradas : ubicaciones;
+        const totalPaginas = Math.ceil(datos.length / itemsPorPagina);
+        if (paginaActualUbicaciones < totalPaginas) {
+            paginaActualUbicaciones++;
+            mostrarUbicaciones();
+        }
+    });
+
+    // Similar para responsables y equipos...
+    // Paginación responsables
+    document.getElementById('prevResponsables').addEventListener('click', () => {
+        if (paginaActualResponsables > 1) {
+            paginaActualResponsables--;
+            mostrarResponsables();
+        }
+    });
+    document.getElementById('nextResponsables').addEventListener('click', () => {
+        const datos = responsablesFiltrados.length > 0 ? responsablesFiltrados : responsables;
+        const totalPaginas = Math.ceil(datos.length / itemsPorPagina);
+        if (paginaActualResponsables < totalPaginas) {
+            paginaActualResponsables++;
+            mostrarResponsables();
+        }
+    });
+    // Paginación equipos
+    document.getElementById('prevEquipos').addEventListener('click', () => {
+        if (paginaActualEquipos > 1) {
+            paginaActualEquipos--;
+            mostrarEquipos();
+        } 
+    });
+    document.getElementById('nextEquipos').addEventListener('click', () => {
+        const datos = equiposFiltrados.length > 0 ? equiposFiltrados : equipos;
+        const totalPaginas = Math.ceil(datos.length / itemsPorPagina);
+        if (paginaActualEquipos < totalPaginas) {
+            paginaActualEquipos++;
+            mostrarEquipos();
+        }
     });
 }
 
@@ -116,20 +237,38 @@ async function cargarUbicaciones() {
 
 function mostrarUbicaciones() {
     const tabla = document.getElementById('tablaUbicaciones');
+    const datos = ubicacionesFiltradas.length > 0 || document.getElementById('buscarUbicacion').value 
+        ? ubicacionesFiltradas : ubicaciones;
     
-    if (ubicaciones.length === 0) {
+    // Calcular paginación
+    const inicio = (paginaActualUbicaciones - 1) * itemsPorPagina;
+    const fin = inicio + itemsPorPagina;
+    const datosPaginados = datos.slice(inicio, fin);
+    const totalPaginas = Math.ceil(datos.length / itemsPorPagina);
+    
+    // Actualizar información de paginación
+    document.getElementById('mostrando-ubicaciones').textContent = 
+        datos.length > 0 ? `${inicio + 1}-${Math.min(fin, datos.length)}` : '0';
+    document.getElementById('total-ubicaciones').textContent = datos.length;
+    document.getElementById('paginaUbicaciones').textContent = `Página ${paginaActualUbicaciones} de ${totalPaginas || 1}`;
+    
+    // Habilitar/deshabilitar botones
+    document.getElementById('prevUbicaciones').disabled = paginaActualUbicaciones === 1;
+    document.getElementById('nextUbicaciones').disabled = paginaActualUbicaciones >= totalPaginas;
+    
+    if (datosPaginados.length === 0) {
         tabla.innerHTML = `
             <tr>
                 <td colspan="5" class="empty-state">
-                    <div>No hay ubicaciones registradas</div>
-                    <small>Agrega la primera ubicación usando el botón superior</small>
+                    <div>No se encontraron ubicaciones</div>
+                    <small>${datos.length === 0 ? 'Agrega la primera ubicación' : 'Intenta con otros términos de búsqueda'}</small>
                 </td>
             </tr>
         `;
         return;
     }
 
-    tabla.innerHTML = ubicaciones.map(ubicacion => `
+    tabla.innerHTML = datosPaginados.map(ubicacion => `
         <tr>
             <td>${ubicacion.codigo_asignado}</td>
             <td>${ubicacion.nombre_ubicacion}</td>
@@ -166,11 +305,6 @@ async function guardarUbicacion() {
             body: JSON.stringify(ubicacion)
         });
 
-        // Verifica el código de estado HTTP
-        if (!response.ok) {
-            throw new Error('Error de red o servidor');
-        }
-
         const result = await response.json();
         
         if (result.success) {
@@ -183,9 +317,9 @@ async function guardarUbicacion() {
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error al conectar con el servidor');
     }
 }
+
 
 function editarUbicacion(id) {
     const ubicacion = ubicaciones.find(u => u.id == id);
@@ -478,8 +612,21 @@ function cerrarModal(tipo) {
 }
 
 function limpiarFormulario(tipo) {
-    const formId = 'form' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + 's';
-    document.getElementById(formId).reset();
+    let formId;
+    
+    // Mapear correctamente los IDs de los formularios
+    if (tipo === 'ubicacion') {
+        formId = 'formUbicaciones';
+    } else if (tipo === 'responsable') {
+        formId = 'formResponsables';
+    } else if (tipo === 'equipo') {
+        formId = 'formEquipos';
+    }
+    
+    const formulario = document.getElementById(formId);
+    if (formulario) {
+        formulario.reset();
+    }
     
     // Limpiar variables de edición
     if (tipo === 'ubicacion') editandoUbicacion = null;
