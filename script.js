@@ -336,5 +336,181 @@ async function eliminarResponsable(id) {
 }
 
 // ===== CRUD EQUIPOS =====
+async function cargarEquipos() {
+    try {
+        const response = await fetch(`${API_URL}?modulo=equipos&accion=listar`);
+        const data = await response.json();
+        equipos = Array.isArray(data) ? data : [];
+        mostrarEquipos();
+    } catch (error) {
+        console.error('Error al cargar equipos:', error);
+        equipos = [];
+        mostrarEquipos();
+    }
+}
+
+function mostrarEquipos() {
+    const tabla = document.getElementById('tablaEquipos');
+    
+    if (equipos.length === 0) {
+        tabla.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-state">
+                    <div>No hay equipos médicos registrados</div>
+                    <small>Agrega el primer equipo usando el botón superior</small>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tabla.innerHTML = equipos.map(equipo => `
+        <tr>
+            <td>${equipo.numero_activo}</td>
+            <td>${equipo.marca}</td>
+            <td>${equipo.modelo}</td>
+            <td>${equipo.nombre_ubicacion || equipo.codigo_ubicacion}</td>
+            <td>${equipo.nombres_apellidos || equipo.codigo_responsable}</td>
+            <td><span class="status-badge status-active">Activo</span></td>
+            <td>
+                <div class="actions">
+                    <button class="btn btn-edit" onclick="editarEquipo(${equipo.id})">✏️ Editar</button>
+                    <button class="btn btn-delete" onclick="eliminarEquipo(${equipo.id})">🗑️ Eliminar</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function guardarEquipo() {
+    const equipo = {
+        numero_activo: document.getElementById('equipo_activo').value,
+        marca: document.getElementById('equipo_marca').value,
+        modelo: document.getElementById('equipo_modelo').value,
+        codigo_ubicacion: document.getElementById('equipo_ubicacion').value,
+        codigo_responsable: document.getElementById('equipo_responsable').value
+    };
+
+    try {
+        const url = editandoEquipo 
+            ? `${API_URL}?modulo=equipos&accion=actualizar&id=${editandoEquipo.id}`
+            : `${API_URL}?modulo=equipos&accion=insertar`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(equipo)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Equipo médico guardado exitosamente');
+            cerrarModal('equipo');
+            await cargarEquipos();
+        } else {
+            alert('❌ Error: ' + (result.mensaje || 'Error al guardar'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al conectar con el servidor');
+    }
+}
+
+function editarEquipo(id) {
+    const equipo = equipos.find(e => e.id == id);
+    if (equipo) {
+        document.getElementById('equipo_activo').value = equipo.numero_activo;
+        document.getElementById('equipo_marca').value = equipo.marca;
+        document.getElementById('equipo_modelo').value = equipo.modelo;
+        actualizarDropdowns();
+        setTimeout(() => {
+            document.getElementById('equipo_ubicacion').value = equipo.codigo_ubicacion;
+            document.getElementById('equipo_responsable').value = equipo.codigo_responsable;
+        }, 100);
+        editandoEquipo = equipo;
+        abrirModal('equipo');
+    }
+}
+
+async function eliminarEquipo(id) {
+    if (confirm('¿Estás seguro de eliminar este equipo médico?')) {
+        try {
+            const response = await fetch(`${API_URL}?modulo=equipos&accion=eliminar&id=${id}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('✅ Equipo médico eliminado exitosamente');
+                await cargarEquipos();
+            } else {
+                alert('❌ ' + (result.mensaje || 'Error al eliminar'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error al eliminar');
+        }
+    }
+}
 
 // ===== FUNCIONES DE MODALES =====
+function abrirModal(tipo) {
+    const modalId = 'modal' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    document.getElementById(modalId).classList.add('active');
+    
+    if (tipo === 'equipo') {
+        actualizarDropdowns();
+    }
+}
+
+function cerrarModal(tipo) {
+    const modalId = 'modal' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    document.getElementById(modalId).classList.remove('active');
+    limpiarFormulario(tipo);
+}
+
+function limpiarFormulario(tipo) {
+    const formId = 'form' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + 's';
+    document.getElementById(formId).reset();
+    
+    // Limpiar variables de edición
+    if (tipo === 'ubicacion') editandoUbicacion = null;
+    if (tipo === 'responsable') editandoResponsable = null;
+    if (tipo === 'equipo') editandoEquipo = null;
+}
+
+// ===== ACTUALIZAR DROPDOWNS =====
+function actualizarDropdowns() {
+    // Actualizar dropdown de ubicaciones
+    const selectUbicacion = document.getElementById('equipo_ubicacion');
+    if (selectUbicacion) {
+        const valorActual = selectUbicacion.value;
+        selectUbicacion.innerHTML = '<option value="">Seleccione una ubicación</option>';
+        ubicaciones.forEach(ubicacion => {
+            selectUbicacion.innerHTML += `
+                <option value="${ubicacion.codigo_asignado}">
+                    ${ubicacion.codigo_asignado} - ${ubicacion.nombre_ubicacion}
+                </option>
+            `;
+        });
+        if (valorActual) selectUbicacion.value = valorActual;
+    }
+
+    // Actualizar dropdown de responsables
+    const selectResponsable = document.getElementById('equipo_responsable');
+    if (selectResponsable) {
+        const valorActual = selectResponsable.value;
+        selectResponsable.innerHTML = '<option value="">Seleccione un responsable</option>';
+        responsables.forEach(responsable => {
+            selectResponsable.innerHTML += `
+                <option value="${responsable.codigo_asignado}">
+                    ${responsable.codigo_asignado} - ${responsable.nombres_apellidos}
+                </option>
+            `;
+        });
+        if (valorActual) selectResponsable.value = valorActual;
+    }
+}
