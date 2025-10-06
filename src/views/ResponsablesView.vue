@@ -1,17 +1,22 @@
 <template>
   <div class="container">
-    <HeaderComponent />
-    <div class="content">
-      <ResponsablesCrud />
-    </div>
+    <ResponsablesCrud />
   </div>
 </template>
 
 <script>
-import HeaderComponent from '../components/HeaderComponent.vue'
 import ResponsablesCrud from '../components/ResponsablesCrud.vue'
 
 export default {
-  components: { HeaderComponent, ResponsablesCrud }
+  components: { ResponsablesCrud }
 }
 </script>
+
+<style scoped>
+.container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+</style>

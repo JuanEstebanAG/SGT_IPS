@@ -1,136 +1,128 @@
 <template>
-  <div class="container">
-    <!-- Header -->
-    <HeaderComponent />
-    
-    <!-- Navigation Tabs -->
-    <nav class="nav-tabs">
-      <button 
-        v-for="tab in tabs" 
-        :key="tab.id"
-        :class="['nav-tab', { active: activeTab === tab.id }]"
-        @click="changeTab(tab.id)"
-      >
-        {{ tab.icon }} {{ tab.label }}
-      </button>
-    </nav>
-
-    <!-- Content -->
-    <div class="content">
-      <!-- Ubicaciones Tab -->
-      <div v-show="activeTab === 'ubicaciones'" class="tab-content">
-        <UbicacionesCrud />
-      </div>
-
-      <!-- Responsables Tab -->
-      <div v-show="activeTab === 'responsables'" class="tab-content">
-        <ResponsablesCrud />
-      </div>
-
-      <!-- Equipos Tab -->
-      <div v-show="activeTab === 'equipos'" class="tab-content">
-        <EquiposCrud />
+  <div class="home">
+    <div class="dashboard">
+      <h2>Panel de Control</h2>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📍</div>
+          <div class="stat-info">
+            <h3>{{ stats.ubicaciones }}</h3>
+            <p>Ubicaciones</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <h3>{{ stats.responsables }}</h3>
+            <p>Responsables</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">🔬</div>
+          <div class="stat-info">
+            <h3>{{ stats.equipos }}</h3>
+            <p>Equipos Médicos</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <h3>{{ connectionStatus }}</h3>
+            <p>Estado del Sistema</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
-import HeaderComponent from '../components/HeaderComponent.vue'
-import UbicacionesCrud from '../components/UbicacionesCrud.vue'
-import ResponsablesCrud from '../components/ResponsablesCrud.vue'
-import EquiposCrud from '../components/EquiposCrud.vue'
+import apiService from '@/services/apiService'
 
 export default {
   name: 'HomeView',
-  components: {
-    HeaderComponent,
-    UbicacionesCrud,
-    ResponsablesCrud,
-    EquiposCrud
-  },
-  setup() {
-    const activeTab = ref('ubicaciones')
-    
-    const tabs = [
-      { id: 'ubicaciones', label: 'Ubicaciones', icon: '📍' },
-      { id: 'responsables', label: 'Responsables', icon: '👥' },
-      { id: 'equipos', label: 'Equipos Médicos', icon: '🔬' }
-    ]
-
-    const changeTab = (tabId) => {
-      activeTab.value = tabId
-    }
-
+  data() {
     return {
-      activeTab,
-      tabs,
-      changeTab
+      stats: {
+        ubicaciones: 0,
+        responsables: 0,
+        equipos: 0
+      },
+      connectionStatus: 'Verificando...'
+    }
+  },
+  mounted() {
+    this.cargarEstadisticas()
+  },
+  methods: {
+    async cargarEstadisticas() {
+      try {
+        const [ubicaciones, responsables, equipos, info] = await Promise.all([
+          apiService.ubicaciones.listar(),
+          apiService.responsables.listar(),
+          apiService.equipos.listar(),
+          apiService.info()
+        ])
+        
+        this.stats.ubicaciones = ubicaciones.data.length
+        this.stats.responsables = responsables.data.length
+        this.stats.equipos = equipos.data.length
+        this.connectionStatus = 'Conectado'
+        
+        console.log('✅ Sistema conectado:', info.data)
+      } catch (error) {
+        console.error('❌ Error de conexión:', error)
+        this.connectionStatus = 'Desconectado'
+      }
     }
   }
 }
 </script>
 
 <style scoped>
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
+.dashboard {
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  overflow: hidden;
-  min-height: 100vh;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.nav-tabs {
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
   display: flex;
-  background: #f8f9fa;
-  border-bottom: 3px solid #dee2e6;
-  padding: 0 20px;
+  align-items: center;
+  gap: 1.5rem;
+  transition: transform 0.3s;
 }
 
-.nav-tab {
-  padding: 20px 30px;
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #343a40;
-  transition: all 0.3s ease;
-  position: relative;
+.stat-card:hover {
+  transform: translateY(-5px);
 }
 
-.nav-tab:hover {
-  background: rgba(0,102,204,0.1);
+.stat-icon {
+  font-size: 3rem;
 }
 
-.nav-tab.active {
-  color: #0066cc;
-  background: white;
+.stat-info h3 {
+  font-size: 2rem;
+  margin-bottom: 0.25rem;
 }
 
-.nav-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #0066cc;
-}
-
-.content {
-  padding: 30px;
-}
-
-.tab-content {
-  animation: fadeIn 0.5s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.stat-info p {
+  opacity: 0.9;
 }
 </style>

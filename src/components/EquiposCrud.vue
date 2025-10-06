@@ -1,149 +1,95 @@
 <template>
   <div class="crud-container">
     <div class="module-header">
-      <h2 class="module-title">Gestión de Equipos Médicos</h2>
-      <button class="btn btn-primary" @click="abrirModal()">
+      <h2>Gestión de Equipos Médicos</h2>
+      <button class="btn btn-primary" @click="openModal()">
         ➕ Nuevo Equipo
       </button>
     </div>
 
-    <div class="search-container">
-      <input 
-        v-model="searchTerm"
-        type="text" 
-        class="search-input" 
-        placeholder="🔍 Buscar por activo, marca, modelo o ubicación..."
-        @input="filtrarEquipos"
-      >
-    </div>
+    <input 
+      v-model="searchQuery"
+      type="text" 
+      class="search-box" 
+      placeholder="Buscar por activo, marca o modelo..."
+    >
 
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Número Activo</th>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Ubicación</th>
-            <th>Responsable</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="equiposPaginados.length === 0">
-            <td colspan="7" class="empty-state">
-              <div>No hay equipos médicos registrados</div>
-              <small>Agrega el primer equipo usando el botón superior</small>
-            </td>
-          </tr>
-          <tr v-for="equipo in equiposPaginados" :key="equipo.id">
-            <td>{{ equipo.numero_activo }}</td>
-            <td>{{ equipo.marca }}</td>
-            <td>{{ equipo.modelo }}</td>
-            <td>{{ equipo.nombre_ubicacion || equipo.codigo_ubicacion }}</td>
-            <td>{{ equipo.nombres_apellidos || equipo.codigo_responsable }}</td>
-            <td>
-              <span class="status-badge status-active">Activo</span>
-            </td>
-            <td>
-              <div class="actions">
-                <button class="btn btn-edit" @click="editarEquipo(equipo)">
-                  ✏️ Editar
-                </button>
-                <button class="btn btn-delete" @click="eliminarEquipo(equipo.id)">
-                  🗑️ Eliminar
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Número Activo</th>
+          <th>Marca</th>
+          <th>Modelo</th>
+          <th>Ubicación</th>
+          <th>Responsable</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-if="loading">
+          <td colspan="6" class="text-center">Cargando...</td>
+        </tr>
+        <tr v-else-if="filteredEquipos.length === 0">
+          <td colspan="6" class="empty-state">No se encontraron equipos</td>
+        </tr>
+        <tr v-else v-for="equipo in paginatedEquipos" :key="equipo.id">
+          <td>{{ equipo.numero_activo }}</td>
+          <td>{{ equipo.marca }}</td>
+          <td>{{ equipo.modelo }}</td>
+          <td>{{ equipo.nombre_ubicacion || equipo.codigo_ubicacion }}</td>
+          <td>{{ equipo.nombres_apellidos || equipo.codigo_responsable }}</td>
+          <td>
+            <button class="btn-edit" @click="openModal(equipo)">✏️</button>
+            <button class="btn-delete" @click="deleteEquipo(equipo)">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div class="pagination-container">
-      <div class="pagination-info">
-        Mostrando {{ paginationInfo.showing }} de {{ paginationInfo.total }} registros
-      </div>
-      <div class="pagination-controls">
-        <button 
-          class="btn-pagination" 
-          :disabled="currentPage === 1"
-          @click="currentPage--"
-        >
-          ← Anterior
-        </button>
-        <span class="page-number">Página {{ currentPage }} de {{ totalPages }}</span>
-        <button 
-          class="btn-pagination" 
-          :disabled="currentPage >= totalPages"
-          @click="currentPage++"
-        >
-          Siguiente →
-        </button>
-      </div>
-    </div>
-
-    <div v-if="modalVisible" class="modal active" @click.self="cerrarModal">
+    <div v-if="showModal" class="modal active" @click.self="closeModal">
       <div class="modal-content">
-        <div class="modal-header">
-          <h2>🔬 {{ editando ? 'Editar' : 'Agregar' }} Equipo Médico</h2>
-        </div>
-        <form @submit.prevent="guardarEquipo">
+        <h3>{{ isEditing ? 'Editar Equipo Médico' : 'Nuevo Equipo Médico' }}</h3>
+        
+        <form @submit.prevent="saveEquipo">
           <div class="form-group">
-            <label>Número de Activo:</label>
-            <input 
-              v-model="formulario.numero_activo"
-              type="text" 
-              class="form-control" 
-              placeholder="Ej: ACT-2024001" 
-              required
-            >
+            <label>Número de Activo *</label>
+            <input v-model="form.numero_activo" type="text" required placeholder="ACT-2024001">
           </div>
+
           <div class="form-group">
-            <label>Marca:</label>
-            <input 
-              v-model="formulario.marca"
-              type="text" 
-              class="form-control" 
-              placeholder="Ej: Philips" 
-              required
-            >
+            <label>Marca *</label>
+            <input v-model="form.marca" type="text" required placeholder="Philips">
           </div>
+
           <div class="form-group">
-            <label>Modelo:</label>
-            <input 
-              v-model="formulario.modelo"
-              type="text" 
-              class="form-control" 
-              placeholder="Ej: IntelliVue MX450" 
-              required
-            >
+            <label>Modelo *</label>
+            <input v-model="form.modelo" type="text" required placeholder="IntelliVue MX450">
           </div>
+
           <div class="form-group">
-            <label>Ubicación:</label>
-            <select v-model="formulario.codigo_ubicacion" class="form-control" required>
+            <label>Ubicación *</label>
+            <select v-model="form.codigo_ubicacion" required>
               <option value="">Seleccione una ubicación</option>
               <option v-for="ubicacion in ubicaciones" :key="ubicacion.id" :value="ubicacion.codigo_asignado">
                 {{ ubicacion.codigo_asignado }} - {{ ubicacion.nombre_ubicacion }}
               </option>
             </select>
           </div>
+
           <div class="form-group">
-            <label>Responsable:</label>
-            <select v-model="formulario.codigo_responsable" class="form-control" required>
+            <label>Responsable *</label>
+            <select v-model="form.codigo_responsable" required>
               <option value="">Seleccione un responsable</option>
               <option v-for="responsable in responsables" :key="responsable.id" :value="responsable.codigo_asignado">
                 {{ responsable.codigo_asignado }} - {{ responsable.nombres_apellidos }}
               </option>
             </select>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-cancel" @click="cerrarModal">
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-success">
-              Guardar
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" @click="closeModal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              {{ isEditing ? 'Actualizar' : 'Guardar' }}
             </button>
           </div>
         </form>
@@ -160,183 +106,171 @@ export default {
   name: 'EquiposCrud',
   setup() {
     const equipos = ref([])
-    const equiposFiltrados = ref([])
     const ubicaciones = ref([])
     const responsables = ref([])
-    const searchTerm = ref('')
-    const currentPage = ref(1)
-    const itemsPerPage = 10
-    const modalVisible = ref(false)
-    const editando = ref(false)
-    const formulario = ref({
+    const loading = ref(false)
+    const showModal = ref(false)
+    const isEditing = ref(false)
+    const searchQuery = ref('')
+
+    const form = ref({
+      id: null,
       numero_activo: '',
       marca: '',
       modelo: '',
       codigo_ubicacion: '',
       codigo_responsable: ''
     })
-    const equipoEditandoId = ref(null)
 
-    const equiposPaginados = computed(() => {
-      const start = (currentPage.value - 1) * itemsPerPage
-      const end = start + itemsPerPage
-      const datos = searchTerm.value ? equiposFiltrados.value : equipos.value
-      return datos.slice(start, end)
-    })
-
-    const totalPages = computed(() => {
-      const datos = searchTerm.value ? equiposFiltrados.value : equipos.value
-      return Math.ceil(datos.length / itemsPerPage) || 1
-    })
-
-    const paginationInfo = computed(() => {
-      const datos = searchTerm.value ? equiposFiltrados.value : equipos.value
-      const start = (currentPage.value - 1) * itemsPerPage
-      const end = Math.min(start + itemsPerPage, datos.length)
-      return {
-        showing: datos.length > 0 ? `${start + 1}-${end}` : '0',
-        total: datos.length
-      }
-    })
-
-    const cargarEquipos = async () => {
+    const loadEquipos = async () => {
+      loading.value = true
       try {
-        const response = await apiService.getEquipos()
+        const response = await apiService.equipos.listar()
         equipos.value = response.data
       } catch (error) {
         console.error('Error al cargar equipos:', error)
+      } finally {
+        loading.value = false
       }
     }
 
-    const cargarUbicaciones = async () => {
+    const loadUbicaciones = async () => {
       try {
-        const response = await apiService.getUbicaciones()
+        const response = await apiService.ubicaciones.listar()
         ubicaciones.value = response.data
       } catch (error) {
         console.error('Error al cargar ubicaciones:', error)
       }
     }
 
-    const cargarResponsables = async () => {
+    const loadResponsables = async () => {
       try {
-        const response = await apiService.getResponsables()
+        const response = await apiService.responsables.listar()
         responsables.value = response.data
       } catch (error) {
         console.error('Error al cargar responsables:', error)
       }
     }
 
-    const filtrarEquipos = () => {
-      const term = searchTerm.value.toLowerCase()
-      equiposFiltrados.value = equipos.value.filter(e =>
-        e.numero_activo.toLowerCase().includes(term) ||
-        e.marca.toLowerCase().includes(term) ||
-        e.modelo.toLowerCase().includes(term) ||
-        (e.nombre_ubicacion && e.nombre_ubicacion.toLowerCase().includes(term)) ||
-        (e.nombres_apellidos && e.nombres_apellidos.toLowerCase().includes(term))
+    const filteredEquipos = computed(() => {
+      if (!searchQuery.value) return equipos.value
+      
+      const query = searchQuery.value.toLowerCase()
+      return equipos.value.filter(e => 
+        e.numero_activo?.toLowerCase().includes(query) ||
+        e.marca?.toLowerCase().includes(query) ||
+        e.modelo?.toLowerCase().includes(query)
       )
-      currentPage.value = 1
-    }
+    })
 
-    const abrirModal = () => {
-      modalVisible.value = true
-      editando.value = false
-      formulario.value = {
-        numero_activo: '',
-        marca: '',
-        modelo: '',
-        codigo_ubicacion: '',
-        codigo_responsable: ''
+    const paginatedEquipos = computed(() => filteredEquipos.value)
+
+    const openModal = (equipo = null) => {
+      if (equipo) {
+        isEditing.value = true
+        form.value = {
+          id: equipo.id,
+          numero_activo: equipo.numero_activo,
+          marca: equipo.marca,
+          modelo: equipo.modelo,
+          codigo_ubicacion: equipo.codigo_ubicacion,
+          codigo_responsable: equipo.codigo_responsable
+        }
+      } else {
+        isEditing.value = false
+        form.value = {
+          id: null,
+          numero_activo: '',
+          marca: '',
+          modelo: '',
+          codigo_ubicacion: '',
+          codigo_responsable: ''
+        }
       }
+      showModal.value = true
     }
 
-    const cerrarModal = () => {
-      modalVisible.value = false
-      editando.value = false
-      equipoEditandoId.value = null
+    const closeModal = () => {
+      showModal.value = false
     }
 
-    const editarEquipo = (equipo) => {
-      editando.value = true
-      equipoEditandoId.value = equipo.id
-      formulario.value = {
-        numero_activo: equipo.numero_activo,
-        marca: equipo.marca,
-        modelo: equipo.modelo,
-        codigo_ubicacion: equipo.codigo_ubicacion,
-        codigo_responsable: equipo.codigo_responsable
-      }
-      modalVisible.value = true
-    }
-
-    const guardarEquipo = async () => {
+    const saveEquipo = async () => {
       try {
-        if (editando.value) {
-          await apiService.updateEquipo(equipoEditandoId.value, formulario.value)
-          alert('✅ Equipo médico actualizado exitosamente')
+        if (isEditing.value) {
+          await apiService.equipos.actualizar(form.value.id, form.value)
+          alert('Equipo actualizado exitosamente')
         } else {
-          await apiService.createEquipo(formulario.value)
-          alert('✅ Equipo médico creado exitosamente')
+          await apiService.equipos.crear(form.value)
+          alert('Equipo creado exitosamente')
         }
-        cerrarModal()
-        await cargarEquipos()
+        closeModal()
+        loadEquipos()
       } catch (error) {
-        alert('❌ Error: ' + error.message)
+        console.error('Error al guardar:', error)
+        alert('Error al guardar el equipo')
       }
     }
 
-    const eliminarEquipo = async (id) => {
-      if (confirm('¿Estás seguro de eliminar este equipo médico?')) {
-        try {
-          await apiService.deleteEquipo(id)
-          alert('✅ Equipo médico eliminado exitosamente')
-          await cargarEquipos()
-        } catch (error) {
-          alert('❌ Error: ' + error.message)
-        }
+    const deleteEquipo = async (equipo) => {
+      if (!confirm(`¿Está seguro de eliminar el equipo ${equipo.numero_activo}?`)) {
+        return
+      }
+
+      try {
+        await apiService.equipos.eliminar(equipo.id)
+        alert('Equipo eliminado exitosamente')
+        loadEquipos()
+      } catch (error) {
+        console.error('Error al eliminar:', error)
+        alert('Error al eliminar el equipo')
       }
     }
 
     onMounted(() => {
-      cargarEquipos()
-      cargarUbicaciones()
-      cargarResponsables()
+      loadEquipos()
+      loadUbicaciones()
+      loadResponsables()
     })
 
     return {
       equipos,
-      equiposFiltrados,
-      equiposPaginados,
       ubicaciones,
       responsables,
-      searchTerm,
-      currentPage,
-      totalPages,
-      paginationInfo,
-      modalVisible,
-      editando,
-      formulario,
-      filtrarEquipos,
-      abrirModal,
-      cerrarModal,
-      editarEquipo,
-      guardarEquipo,
-      eliminarEquipo
+      loading,
+      showModal,
+      isEditing,
+      searchQuery,
+      form,
+      filteredEquipos,
+      paginatedEquipos,
+      openModal,
+      closeModal,
+      saveEquipo,
+      deleteEquipo
     }
   }
 }
 </script>
 
 <style scoped>
-/* Mismos estilos que otros componentes CRUD */
 .crud-container { width: 100%; }
-.module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #dee2e6; }
-.search-container { margin-bottom: 25px; }
-.search-input { width: 100%; padding: 14px 20px; border: 2px solid #e1e8ed; border-radius: 12px; font-size: 1rem; }
-.table-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.08); margin-bottom: 20px; }
-.pagination-container { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #f8f9fa; border-radius: 12px; }
-.modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; }
-.pagination-controls { display: flex; gap: 12px; align-items: center; }
-.page-number { padding: 10px 20px; background: linear-gradient(135deg, #0066cc 0%, #004499 100%); color: white; border-radius: 8px; font-weight: 600; min-width: 120px; text-align: center; }
+.module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.search-box { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
+.btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; }
+.btn-primary { background: #0066cc; color: white; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-edit, .btn-delete { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; margin: 0 2px; }
+.btn-edit { background: #ffc107; }
+.btn-delete { background: #dc3545; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: #f8f9fa; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+.empty-state { text-align: center; color: #999; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; }
+.modal.active { display: flex; }
+.modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+.form-group input, .form-group select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 </style>

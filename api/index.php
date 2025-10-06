@@ -24,7 +24,7 @@ $servidor = "localhost";
 $usuario = "root"; 
 $passwd = ""; 
 $nombreBaseDatos = "sgt_ips";
-$conexionBD = new mysqli($servidor, $usuario, $passwd, $nombreBaseDatos);
+$conexionBD = new mysqli($servidor, $usuario, $passwd, $nombreBaseDatos, 3306);
 
 // Verificar conexión
 if ($conexionBD->connect_error) {
