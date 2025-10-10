@@ -28,7 +28,7 @@ Antes de comenzar, asegúrate de tener instalado:
 - Git (opcional, para clonar el repositorio)
 
 ## 📁 Estructura del Proyecto
-
+```
 sgt/
 ├── api/
 │   └── index.php              # API REST en PHP
@@ -54,6 +54,7 @@ sgt/
 ├── vite.config.js
 ├── package.json
 └── README.md
+```
 
 ## 🚀 Instalación y Configuración
 
